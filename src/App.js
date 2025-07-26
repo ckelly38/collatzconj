@@ -9,6 +9,29 @@ function App() {
   let [errmsg, setErrorMessage] = useState("");
   //let [myxvals, setMyXVals] = useState([]);
   const cc = new commonclass();
+  function genFirstString(a, b, num)
+  {
+    return "" + b + " - " + a + " = " + (b - a) + " = " + num +"*2^(2n+x)";
+  }
+  function getNextCollatzNum(num, stopatone=true)
+  {
+    if (num %2 === 0)
+    {
+      if (num === 0) return 0;
+      else return num / 2;
+    }
+    else
+    {
+      if (num === 1 && stopatone) return 1;
+      else if (num === -1 && stopatone) return -1;
+      else return ((3*num) + 1*((0 < num) ? 1 : -1))/2;
+    }
+  }
+  function goCollatzUntilStop(num)
+  {
+    if (num === 1 || num === -1 || num === 0) return [num];
+    else return [num, ...goCollatzUntilStop(getNextCollatzNum(num, true))];
+  }
   //function addVal(mval)
   //{
   //  let mnxvals = myxvals.map((mxval) => mxval);
@@ -43,11 +66,12 @@ function App() {
   console.log("APP: mynumpowsarr = ", mynumpowsarr);
   
   const useoneline = true;
-  const finuseoneline = (useoneline && mynum < 101);
+  const finuseoneline = useoneline;//const finuseoneline = (useoneline && mynum < 101);
   const blckstr = (finuseoneline ? "inline-" : "") + "block";
   const mypowcomps = mynumpowsarr.map((pnum) => <NumTimesTwoPowerComp key={"row" + pnum} mynum={mynum}
     mypow={mypow} oneline={finuseoneline} cpow={pnum} />);// addVal={addVal}
-  const mypowvalsminusone = mynumpowsarr.map((pnum) => mynum*Math.pow(2, pnum) - 1);
+  const mypowvalsminusone = mynumpowsarr.map((pnum) =>
+    mynum*Math.pow(2, pnum) - 1*((0 < mynum) ? 1: -1));
   const mypowvalsdivbyt = mypowvalsminusone.map((mval) => cc.valIsDivisibleByThree(mval));
   const myxvals = mypowvalsminusone.filter((pval, pindx) => mypowvalsdivbyt[pindx])
     .map((mpval) => mpval/3);
@@ -62,6 +86,7 @@ function App() {
   }
   const minpnum = mynumpowsarr[fstpwindx];
   const finxval = minpnum - 2; 
+  const finpartstr = ((finxval === 0) ? "": ((0 < finxval) ? "+" + finxval: "-" + -finxval));
   let myfinelems = [];
   const ismynuminvalid = (mynum % 2 === 0 || mynum % 3 === 0);
   if (ismynuminvalid);
@@ -95,7 +120,8 @@ function App() {
   //we could also display the collatz chain for the number
   return (
     <div className="App">
-      <label for="mynum" name="mynumlbl">My odd number:</label>
+      <h1>Collatz Conjecture And Information App</h1>
+      <label htmlFor="mynum" name="mynumlbl">My odd number:</label>
       <input id="mynum" name="mynum" type="number" min={1} step={2} value={mynum}
         onChange={(event) => setMyNum(Number(event.target.value))}
         onBlur={(event) => {
@@ -113,17 +139,21 @@ function App() {
             }
           }}}
           placeholder="enter an odd integer" />
-      <label for="mypower" name="mypowerlbl">My power number:</label>
+      <label htmlFor="mypower" name="mypowerlbl">My power number:</label>
       <input id="mypower" name="mypower" type="number" min={1} step={1} value={mypow}
         onChange={(event) => setMyPow(Number(event.target.value))}
         placeholder="enter an integer power" />
       {(cc.isVarEmptyOrNull(errmsg) ? <div style={{blckstr}}>
         {myfinelems}</div>: <p style={{color: "red"}}>{errmsg}</p>)}
-      <div>So {myxvals.join(", ")} ... converges.</div>
-      {((cc.isVarEmptyOrNull(myxvals) || myxvals.length < 2) ? <></>:
-      <div>{myxvals[1]} - {myxvals[0]} = {myxvals[1]-myxvals[0]} = {mynum}*2^(2n+x)</div>)}
-      <div>2n + x = {minpnum}, n = 1, 2 + x={minpnum}, x={finxval}</div>
-      <div>{mynum}*2^(2n+x) = {mynum}*2^(2n{(finxval === 0 ? "" : "+" + finxval)})</div>
+      <div>So {mynum + " <- " + myxvals.join(", ")} ... converges if {mynum} converges.</div>
+      {((cc.isVarEmptyOrNull(myxvals) || myxvals.length < 2) ? <></>: <div>
+        <div>{genFirstString(myxvals[0], myxvals[1], mynum)}</div>
+        <div>2n + x = {minpnum}, n = 1, 2 + x={minpnum}, x={finxval}</div>
+        <div>{mynum}*2^(2n+x) = {mynum}*2^(2n{finpartstr})</div>
+        <div>S<sub>n</sub> - S<sub>n-1</sub> = {mynum}*2^(2n{finpartstr}) S<sub>0</sub> = {myxvals[0]}
+        </div>
+      </div>)}
+      <div>{goCollatzUntilStop(mynum).join(" -> ")}</div>
     </div>
   );
 }

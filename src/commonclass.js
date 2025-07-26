@@ -13,9 +13,14 @@ class commonclass
         if (this.isVarEmptyOrNull(mstr)) { throw new Error("val must not be empty or null!"); }
         else
         {
+            if (val < 0) return this.valIsDivisibleByThree(-val);
+
+            let decfnd = false;
             for (let i = 0; i < mstr.length; i++)
             {
                 if (this.isDigit(mstr[i]));
+                else if (mstr[i] === '-' && i === 0);
+                else if (mstr[i] === '.' && !decfnd) decfnd = true;
                 else
                 {
                     throw new Error("val must be a number, but at least one of the characters " +
