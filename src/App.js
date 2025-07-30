@@ -13,6 +13,24 @@ function App() {
   {
     return "" + b + " - " + a + " = " + (b - a) + " = " + num +"*2^(2n+x)";
   }
+  function genSecondString(num, equval)
+  {
+    const isnumneg = (num < 0);
+    const mynummag = (isnumneg ? -num : num);
+    const numsgnstr = (isnumneg ? "-" : "");
+    const ntnegstr = (isnumneg ? "+" : "-");
+    return " = " + numsgnstr + "(1/3)(" + mynummag + "*2^(2n+x) " + ntnegstr + " 1), n=0, " +
+      numsgnstr + "(1/3)(" + mynummag + "*2^(x) " + ntnegstr + " 1) = " + equval;
+  }
+  function genThirdString(num, mxval)
+  {
+    const isnumneg = (num < 0);
+    const mynummag = (isnumneg ? -num : num);
+    const numsgnstr = (isnumneg ? "-" : "");
+    const onegntnumstr = (isnumneg ? "+" : "-");
+    const mxvalstr = ((mxval === 0) ? "" : "+") + mxval;
+    return " = " + numsgnstr + "(1/3)(" + mynummag + "*2^(2n" + mxvalstr + ") " + onegntnumstr + " 1)";
+  }
   function getNextCollatzNum(num, stopatone=true)
   {
     if (num %2 === 0)
@@ -106,13 +124,43 @@ function App() {
     }
     else myfinelems = mypowcomps;
   }
-  console.log("APP: useoneline = ", useoneline);
-  console.log("APP: finuseoneline = ", finuseoneline);
-  console.log("APP: blckstr = ", blckstr);
-  console.log("APP: ismynuminvalid = ", ismynuminvalid);
-  console.log("APP: errmsg = ", errmsg);
-  console.log("APP: fstpwindx = ", fstpwindx);
+  const mynumisneg = (mynum < 0);
+  const pxvals = [0, 1, 2];
+  const mynummag = (mynumisneg ? -mynum : mynum);
+  const numsgstr = (mynumisneg ? "-" : "");
+  const negntnumstr = (mynumisneg ? "-" : "+");
+  const onegntnumstr = (mynumisneg ? "+" : "-");
+  console.log("APP: useoneline = " + useoneline);
+  console.log("APP: finuseoneline = " + finuseoneline);
+  console.log("APP: blckstr = " + blckstr);
+  console.log("APP: ismynuminvalid = " + ismynuminvalid);
+  console.log("APP: errmsg = " + errmsg);
+  console.log("APP: fstpwindx = " + fstpwindx);
   console.log("APP: myxvals = ", myxvals);
+  console.log("APP: pxvals = ", pxvals);
+
+  const xvalsempty = (cc.isVarEmptyOrNull(myxvals) || myxvals.length < 2);
+  const oval = (xvalsempty ? 0 : (mynumisneg ? (3*myxvals[0] - 1) : (3*myxvals[0] + 1))); 
+  const ovaldnum = ((mynum === 0) ? 0 : oval/mynum);
+  console.log("APP: oval = " + oval);
+  console.log("APP: ovaldnum = " + ovaldnum);
+  
+  let myfinxvali = -1;
+  if (xvalsempty) myfinxvali = 0;
+  else
+  {
+    for (let i = 0; i < pxvals.length; i++)
+    {
+      if (ovaldnum === Math.pow(2, pxvals[i]))
+      {
+        //use this...
+        console.log("APP: USE THIS ONE: pxvals[" + i + "] = " + pxvals[i]);
+        myfinxvali = i;
+        break;
+      }
+    }
+  } 
+  console.log("APP: myfinxvali = " + myfinxvali);
 
   //want the x vals that converge... so we can tell the user so x, y, z, ... converges...
   //then we want to display the pattern Sn - (Sn-1) = x * 2 ^ (2n+or-0 or 1 or 2)
@@ -143,15 +191,27 @@ function App() {
       <input id="mypower" name="mypower" type="number" min={1} step={1} value={mypow}
         onChange={(event) => setMyPow(Number(event.target.value))}
         placeholder="enter an integer power" />
+      <h4>Attempting to get other odd numbers in a sequence that converges to {mynum} here:</h4>
       {(cc.isVarEmptyOrNull(errmsg) ? <div style={{blckstr}}>
         {myfinelems}</div>: <p style={{color: "red"}}>{errmsg}</p>)}
       <div>So {mynum + " <- " + myxvals.join(", ")} ... converges if {mynum} converges.</div>
-      {((cc.isVarEmptyOrNull(myxvals) || myxvals.length < 2) ? <></>: <div>
+      {(xvalsempty ? <></>: <div>
+        <h4>Begin getting the Non-Homogeneous Recurance Relation Here:</h4>
         <div>{genFirstString(myxvals[0], myxvals[1], mynum)}</div>
         <div>2n + x = {minpnum}, n = 1, 2 + x={minpnum}, x={finxval}</div>
         <div>{mynum}*2^(2n+x) = {mynum}*2^(2n{finpartstr})</div>
-        <div>S<sub>n</sub> - S<sub>n-1</sub> = {mynum}*2^(2n{finpartstr}) S<sub>0</sub> = {myxvals[0]}
+        <div style={{display: "inline-block", border: "1px solid black"}}>
+              S<sub>n</sub> - S<sub>n-1</sub> = {mynum}*2^(2n{finpartstr}) S<sub>0</sub> = {myxvals[0]}
         </div>
+        <h4>Begin getting the Homogeneous Recurance Relation Here:</h4>
+        <div>S<sub>n</sub>{genSecondString(mynum, myxvals[0])}</div>
+        <div>3*{myxvals[0]} {negntnumstr} 1 = {oval} = {mynum}*2^(x)</div>
+        <div>(3*{myxvals[0]} {negntnumstr} 1)/{mynum} = {ovaldnum} = 2^(x)</div>
+        <div>x = one of the following [0, 1, 2] = {pxvals[myfinxvali]}</div>
+        <div style={{display: "inline-block", border: "1px solid black"}}>
+              S<sub>n</sub>{genThirdString(mynum, pxvals[myfinxvali])} S<sub>0</sub> = {myxvals[0]}
+        </div>
+        <h5>NOTE: On both of those above n is a non-negative integer.</h5>
       </div>)}
       <div>{goCollatzUntilStop(mynum).join(" -> ")}</div>
     </div>
