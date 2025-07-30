@@ -11,10 +11,15 @@ function App() {
   const cc = new commonclass();
   function genFirstString(a, b, num)
   {
+    cc.valMustBeAnInt(a, "a");
+    cc.valMustBeAnInt(b, "b");
+    cc.valMustBeAnInt(num, "num");
     return "" + b + " - " + a + " = " + (b - a) + " = " + num +"*2^(2n+x)";
   }
   function genSecondString(num, equval)
   {
+    cc.valMustBeAnInt(num, "num");
+    cc.valMustBeAnInt(equval, "equval");
     const isnumneg = (num < 0);
     const mynummag = (isnumneg ? -num : num);
     const numsgnstr = (isnumneg ? "-" : "");
@@ -24,6 +29,8 @@ function App() {
   }
   function genThirdString(num, mxval)
   {
+    cc.valMustBeAnInt(num, "num");
+    cc.valMustBeAnInt(mxval, "mxval");
     const isnumneg = (num < 0);
     const mynummag = (isnumneg ? -num : num);
     const numsgnstr = (isnumneg ? "-" : "");
@@ -33,6 +40,8 @@ function App() {
   }
   function getNextCollatzNum(num, stopatone=true)
   {
+    cc.valMustBeBool(stopatone, "stopatone");
+    cc.valMustBeAnInt(num, "num");
     if (num %2 === 0)
     {
       if (num === 0) return 0;
@@ -47,6 +56,7 @@ function App() {
   }
   function goCollatzUntilStop(num)
   {
+    cc.valMustBeAnInt(num, "num");
     if (num === 1 || num === -1 || num === 0) return [num];
     else return [num, ...goCollatzUntilStop(getNextCollatzNum(num, true))];
   }

@@ -7,14 +7,18 @@ class commonclass
         return (mc === '0' || mc === '1' || mc === '2' || mc === '3' || mc === '4' || mc === '5' ||
             mc === '6' || mc === '7' || mc === '8' || mc === '9');
     }
-    valIsDivisibleByThree(val)
+    valMustBeBool(val, varnm="varnm")
     {
-        const mstr = "" + val;
-        if (this.isVarEmptyOrNull(mstr)) { throw new Error("val must not be empty or null!"); }
+        if (this.isVarEmptyOrNull(varnm)) return this.valMustBeBool(val, varnm="varnm");
+        if (val === true || val === false) return true;
+        else throw new Error("" + varnm + " must be a boolean value, but it was not!");
+    }
+    valIsNum(val)
+    {
+        if (this.isVarEmptyOrNull(val)) return false;
         else
         {
-            if (val < 0) return this.valIsDivisibleByThree(-val);
-
+            const mstr = "" + val;
             let decfnd = false;
             for (let i = 0; i < mstr.length; i++)
             {
@@ -23,11 +27,39 @@ class commonclass
                 else if (mstr[i] === '.' && !decfnd) decfnd = true;
                 else
                 {
-                    throw new Error("val must be a number, but at least one of the characters " +
-                        "was not a digit!");
+                    //throw new Error("val must be a number, but at least one of the characters " +
+                    //    "was not a digit!");
+                    return false;
+                }
+            }
+            return true;
+        }
+    }
+    valMustBeANum(val, incdec, varnm="varnm")
+    {
+        this.valMustBeBool(incdec, "incdec");
+        if (this.isVarEmptyOrNull(varnm)) return this.valMustBeANum(val, incdec, varnm="varnm");
+        if (this.valIsNum(val))
+        {
+            if (incdec) return true;
+            else
+            {
+                const mstr = "" + val;
+                if (-1 < mstr.indexOf(".") && mstr.indexOf(".") < mstr.length)
+                {
+                    throw new Error("" + varnm + " must be an integer!");
                 }
             }
         }
+        else throw new Error("" + varnm + " must be a number!");
+    }
+    valMustBeADecNum(val, varnm="varnm") { return this.valMustBeANum(val, true, varnm); }
+    valMustBeAnInt(val, varnm="varnm") { return this.valMustBeANum(val, false, varnm); }
+    valIsDivisibleByThree(val)
+    {
+        const mstr = "" + val;
+        this.valMustBeANum(val, true, "val");
+        if (Number(val) < 0) return this.valIsDivisibleByThree(-1*Number(val));
 
         let mynums = [];
         for (let i = 0; i < mstr.length; i++) mynums.push(Number(mstr[i]));
