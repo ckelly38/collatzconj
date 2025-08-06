@@ -7,6 +7,8 @@ function App() {
   let [mynum, setMyNum] = useState(1);
   let [mypow, setMyPow] = useState(1);
   let [errmsg, setErrorMessage] = useState("");
+  let [calcmisevns, setCalcMisEvns] = useState(false);
+  let [cycleifone, setCycleIfOne] = useState(false);
   //let [myxvals, setMyXVals] = useState([]);
   const cc = new commonclass();
   function genFirstString(a, b, num)
@@ -54,10 +56,16 @@ function App() {
       else return ((3*num) + 1*((0 < num) ? 1 : -1))/2;
     }
   }
-  function goCollatzUntilStop(num)
+  function goCollatzUntilStop(num, cycleifone=false)
   {
     cc.valMustBeAnInt(num, "num");
-    if (num === 1 || num === -1 || num === 0) return [num];
+    cc.valMustBeBool(cycleifone, "cycleifone");
+    if (num === 1 || num === -1)
+    {
+      if (cycleifone) return [num, ...goCollatzUntilStop(getNextCollatzNum(num, false))];
+      else return [num];
+    }
+    else if (num === 0) return [0];
     else return [num, ...goCollatzUntilStop(getNextCollatzNum(num, true))];
   }
   //function addVal(mval)
@@ -171,6 +179,49 @@ function App() {
     }
   } 
   console.log("APP: myfinxvali = " + myfinxvali);
+  console.log("APP: cycleifone = " + cycleifone);
+  console.log("APP: calcmisevns = " + calcmisevns);
+
+  const myresopslist = goCollatzUntilStop(mynum, cycleifone);
+  const mydispresliststr = myresopslist.join(" -> ");
+  const totalnums = myresopslist.length;
+  //note: the display list is minus evens for the odds.
+  //so for every odd except 1: there is a missing even on this list.
+  //5 -> 16 -> 8 -> 4 -> 2 -> 1 (orig list has 6 items 5 opps)
+  //     1     2    3    4    5
+  //5 -> 8 -> 4 -> 2 -> 1 (displayed list has 5 items 5 opps (you need to count missing evens))
+  //     1    2    3    4
+  //7 -> 22 -> 11 -> 34 -> 17 -> 52 -> 26 -> 13 -> 40 -> 20 -> 10 -> 5 -> 16 -> 8 -> 4 -> 2 -> 1
+  //     1     2     3     4     5     6     7     8     9     10    11   12   13    14   15   16
+  //     1           2           3                 4                      5
+  //2(numodds - 1) + numevens = totalops
+  //2numodds - 2 + numevens = totalops
+  //numodds + numodds - 2 + numevens = totalops
+  //NOTE: numodds + numevens = totalnums
+  //numodds + totalnums - 2 = totalops
+  //NOTE: numodds - 1 = finnumodds
+  //numodds + totalnums - 1 - 1 = totalops
+  //numodds - 1 + totalnums - 1 = totalops
+  //finnumodds + totalnums - 1 = totalops
+  //totalops = origlist.length - 1
+  //2 + 2 - 2 + 3 = 5
+
+  //previous value of the accumulator not previous value in the array my mistake on VSCode.
+  //however previous value of the accumulator will be the the first value of the array
+  //if the accumulator is not specifically initialized to zero.
+  const numodds = myresopslist.reduce((previousValue, currentValue, currentIndex) =>
+    previousValue + ((currentValue%2 === 1) ? 1 : 0), 0);
+  //NOTE on filter on JS: if true keep it else exclude it
+  const myoddnums = myresopslist.filter((mval, mindx) => (mval%2 === 1));
+  const missingevens = (calcmisevns ? myoddnums.map((mval, mindx) => mval*3+1)
+    .filter((mval, mindx) => (mindx + 1 < myoddnums.length)) : []);
+  const finnumodds = numodds - 1;
+  const numevens = totalnums - numodds;
+  const totalops = totalnums + finnumodds - 1;
+  const dispnote = "NOTE: a short cut has been applied that when an odd number is found, the next " +
+    "one will always be even unless it 1, then you just stop, so the divide by 2 has already been " +
+    "applied.";
+  //console.log("APP: numodds = " + numodds);
 
   //want the x vals that converge... so we can tell the user so x, y, z, ... converges...
   //then we want to display the pattern Sn - (Sn-1) = x * 2 ^ (2n+or-0 or 1 or 2)
@@ -201,6 +252,11 @@ function App() {
       <input id="mypower" name="mypower" type="number" min={1} step={1} value={mypow}
         onChange={(event) => setMyPow(Number(event.target.value))}
         placeholder="enter an integer power" />
+      <button onClick={(event) => setCalcMisEvns(!calcmisevns)}>
+        {calcmisevns ? "hide" : "show"} missing evens</button>
+      {((mynummag === 1) ? <><label htmlFor="cycifone" name="cycifonelbl">Cycle If One: </label>
+      <input type="checkbox" name="cycifone" id="cycifone" checked={cycleifone}
+        onChange={(event => setCycleIfOne(!cycleifone))} /></>:null)}
       <h4>Attempting to get other odd numbers in a sequence that converges to {mynum} here:</h4>
       {(cc.isVarEmptyOrNull(errmsg) ? <div style={{blckstr}}>
         {myfinelems}</div>: <p style={{color: "red"}}>{errmsg}</p>)}
@@ -223,7 +279,15 @@ function App() {
         </div>
         <h5>NOTE: On both of those above n is a non-negative integer.</h5>
       </div>)}
-      <div>{goCollatzUntilStop(mynum).join(" -> ")}</div>
+      <div>{mydispresliststr}</div>
+      <p>{dispnote}</p>
+      <h4>Trace Statistics:</h4>
+      <div>Number of Odds: {numodds}</div>
+      <div>Number of Evens: {numevens}</div>
+      <div>Total Numbers: {totalnums}</div>
+      <div>Number of Missing Evens: {finnumodds}</div>
+      <div>Missing Even Numbers: [{missingevens.join(", ")}]</div>
+      <div>Total Number of Collatz Opperations: {totalops}</div>
     </div>
   );
 }
