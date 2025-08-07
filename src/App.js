@@ -53,7 +53,7 @@ function App() {
     {
       if (num === 1 && stopatone) return 1;
       else if (num === -1 && stopatone) return -1;
-      else return ((3*num) + 1*((0 < num) ? 1 : -1))/2;
+      else return ((3*num) + ((0 < num) ? 1 : -1))/2;
     }
   }
   function goCollatzUntilStop(num, cycleifone=false)
@@ -213,7 +213,7 @@ function App() {
     previousValue + ((currentValue%2 === 1) ? 1 : 0), 0);
   //NOTE on filter on JS: if true keep it else exclude it
   const myoddnums = myresopslist.filter((mval, mindx) => (mval%2 === 1));
-  const missingevens = (calcmisevns ? myoddnums.map((mval, mindx) => mval*3+1)
+  const missingevens = (calcmisevns ? myoddnums.map((mval, mindx) => mval*3+((0 < mval) ? 1 : -1))
     .filter((mval, mindx) => (mindx + 1 < myoddnums.length)) : []);
   const finnumodds = numodds - 1;
   const numevens = totalnums - numodds;
