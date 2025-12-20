@@ -7,8 +7,10 @@ function App() {
   let [mynum, setMyNum] = useState(1);
   let [mypow, setMyPow] = useState(1);
   let [errmsg, setErrorMessage] = useState("");
+  let [myeqnm, setMyEquationName] = useState("S");
   let [calcmisevns, setCalcMisEvns] = useState(false);
   let [cycleifone, setCycleIfOne] = useState(false);
+  let [textonly, setUseTextOnly] = useState(false);
   //let [myxvals, setMyXVals] = useState([]);
   const cc = new commonclass();
   function genFirstString(a, b, num)
@@ -40,8 +42,9 @@ function App() {
     const mxvalstr = ((mxval === 0) ? "" : "+") + mxval;
     return " = " + numsgnstr + "(1/3)(" + mynummag + "*2^(2n" + mxvalstr + ") " + onegntnumstr + " 1)";
   }
-  function getNextCollatzNum(num, stopatone=true)
+  function getNextCollatzNum(num, museshtct, stopatone=true)
   {
+    cc.valMustBeBool(museshtct, "museshtct");
     cc.valMustBeBool(stopatone, "stopatone");
     cc.valMustBeAnInt(num, "num");
     if (num %2 === 0)
@@ -53,20 +56,63 @@ function App() {
     {
       if (num === 1 && stopatone) return 1;
       else if (num === -1 && stopatone) return -1;
-      else return ((3*num) + ((0 < num) ? 1 : -1))/2;
+      else
+      {
+        const cnum = ((3*num) + ((0 < num) ? 1 : -1)); 
+        return (museshtct ? cnum/2 : cnum);
+      }
     }
   }
-  function goCollatzUntilStop(num, cycleifone=false)
+  function goCollatzUntilStop(num, museshtct, cycleifone=false)
   {
+    console.log("num = " + num);
+    console.log("museshtct = " + museshtct);
+    console.log("cycleifone = " + cycleifone);
     cc.valMustBeAnInt(num, "num");
     cc.valMustBeBool(cycleifone, "cycleifone");
+    cc.valMustBeBool(museshtct, "museshtct");
     if (num === 1 || num === -1)
     {
-      if (cycleifone) return [num, ...goCollatzUntilStop(getNextCollatzNum(num, false))];
+      if (cycleifone)
+      {
+        return [num, ...goCollatzUntilStop(getNextCollatzNum(num, museshtct, false), museshtct, false)];
+      }
       else return [num];
     }
     else if (num === 0) return [0];
-    else return [num, ...goCollatzUntilStop(getNextCollatzNum(num, true))];
+    else return [num, ...goCollatzUntilStop(getNextCollatzNum(num, museshtct, true), museshtct, false)];
+  }
+  function getNumStepsForNum(num, cycleifone=false)
+  {
+    const mlist = goCollatzUntilStop(num, false, cycleifone);
+    return mlist.length - 1;
+  }
+  function genCollatzDispListsWithNumSteps(nums, museshtct, cycleifone=false)
+  {
+    cc.valMustBeBool(museshtct, "museshtct");
+    cc.valMustBeBool(cycleifone, "cycleifone");
+    if (cc.isVarEmptyOrNull(nums)) return [];
+    const mylists = nums.map((mnum, mi) => {
+      const mlist = goCollatzUntilStop(mnum, museshtct, cycleifone);
+      const initmstr = mlist.join(", ");
+      return initmstr + " (" + (mlist.length - 1) + " steps).";
+    });
+    const retlist = nums.map((mnum, mi) => (<div key={"sqncefor" + mnum}>{mnum}: {mylists[mi]}
+      {((mi + 1 < nums.length) ? <br/> : null)}</div>));
+    return retlist;
+  }
+  function getNKStepsEqualsStrings(nmx, knum, minstps)
+  {
+    cc.valMustBeAnInt(nmx, "nmx");
+    cc.valMustBeAnInt(knum, "knum");
+    cc.valMustBeAnInt(minstps, "minstps");
+    let mlist = [];
+    for (let n = 0; n < nmx; n++)
+    {
+      mlist.push("n = " + n + " k = " + ((2*n) + knum) + " total_steps = " + minstps + " + " +
+        (2*n + knum + 1) + " = " + (minstps + (2*n) + knum + 1));
+    }
+    return mlist.map((mstr, mi) => <div key={"nkstepswithn=" + mi}>{mstr}</div>);
   }
   //function addVal(mval)
   //{
@@ -182,7 +228,7 @@ function App() {
   console.log("APP: cycleifone = " + cycleifone);
   console.log("APP: calcmisevns = " + calcmisevns);
 
-  const myresopslist = goCollatzUntilStop(mynum, cycleifone);
+  const myresopslist = goCollatzUntilStop(mynum, true, cycleifone);
   const mydispresliststr = myresopslist.join(" -> ");
   const totalnums = myresopslist.length;
   //note: the display list is minus evens for the odds.
@@ -218,9 +264,17 @@ function App() {
   const finnumodds = numodds - 1;
   const numevens = totalnums - numodds;
   const totalops = totalnums + finnumodds - 1;
-  const dispnote = "NOTE: a short cut has been applied that when an odd number is found, the next " +
+  const dispnote = "NOTE: a shortcut has been applied that when an odd number is found, the next " +
     "one will always be even unless it 1, then you just stop, so the divide by 2 has already been " +
     "applied.";
+  const mythrdstr = (xvalsempty ? "" : genThirdString(mynum, pxvals[myfinxvali]));
+  const myfrthstr = (xvalsempty ? "" : mythrdstr.substring(8, mythrdstr.length - 1));
+  const myfifthstr = (xvalsempty ? "" : myfrthstr.substring(1, myfrthstr.length - 4));
+  const mykeqlsstr = (xvalsempty ? "" : myfifthstr.substring(myfifthstr.length - 5,
+    myfifthstr.length - 1));
+  const mysixthstr = (xvalsempty ? "" : mykeqlsstr.substring(mykeqlsstr.indexOf("+") + 1));
+  const mysxthnum = (xvalsempty ? 0: Number(mysixthstr));
+  const myfinsxthnum = (xvalsempty ? 0: mysxthnum + 1);
   //console.log("APP: numodds = " + numodds);
 
   //want the x vals that converge... so we can tell the user so x, y, z, ... converges...
@@ -230,6 +284,10 @@ function App() {
   return (
     <div className="App">
       <h1>Collatz Conjecture And Information App</h1>
+      <label htmlFor="equnm" name="equnmlbl">My Equation Name:</label>
+      <input id="equnm" name="equnm" type="text" value={myeqnm}
+        onChange={(event) => setMyEquationName(event.target.value)}
+        placeholder="enter an equation name" />
       <label htmlFor="mynum" name="mynumlbl">My odd number:</label>
       <input id="mynum" name="mynum" type="number" min={1} step={2} value={mynum}
         onChange={(event) => setMyNum(Number(event.target.value))}
@@ -254,6 +312,9 @@ function App() {
         placeholder="enter an integer power" />
       <button onClick={(event) => setCalcMisEvns(!calcmisevns)}>
         {calcmisevns ? "hide" : "show"} missing evens</button>
+      <label htmlFor="txtonly" name="txtonlylbl">Use Text Only: </label>
+      <input type="checkbox" name="txtonly" id="txtonly" checked={textonly}
+        onChange={(event => setUseTextOnly(!textonly))} />
       {((mynummag === 1) ? <><label htmlFor="cycifone" name="cycifonelbl">Cycle If One: </label>
       <input type="checkbox" name="cycifone" id="cycifone" checked={cycleifone}
         onChange={(event => setCycleIfOne(!cycleifone))} /></>:null)}
@@ -267,19 +328,51 @@ function App() {
         <div>2n + x = {minpnum}, n = 1, 2 + x={minpnum}, x={finxval}</div>
         <div>{mynum}*2^(2n+x) = {mynum}*2^(2n{finpartstr})</div>
         <div style={{display: "inline-block", border: "1px solid black"}}>
-              S<sub>n</sub> - S<sub>n-1</sub> = {mynum}*2^(2n{finpartstr}) S<sub>0</sub> = {myxvals[0]}
+              {myeqnm}{(textonly ? "_n" : <sub>n</sub>)} - {myeqnm}
+              {(textonly ? "_(n-1)" : <sub>n-1</sub>)} = {mynum}*2^(2n{finpartstr}) {myeqnm}
+              {(textonly ? "_0" : <sub>0</sub>)} = {myxvals[0]}
         </div>
         <h4>Begin getting the Homogeneous Recurance Relation Here:</h4>
-        <div>S<sub>n</sub>{genSecondString(mynum, myxvals[0])}</div>
+        <div>{myeqnm}{(textonly ? "_n" : <sub>n</sub>)}{genSecondString(mynum, myxvals[0])}</div>
         <div>3*{myxvals[0]} {negntnumstr} 1 = {oval} = {mynum}*2^(x)</div>
         <div>(3*{myxvals[0]} {negntnumstr} 1)/{mynum} = {ovaldnum} = 2^(x)</div>
         <div>x = one of the following [0, 1, 2] = {pxvals[myfinxvali]}</div>
         <div style={{display: "inline-block", border: "1px solid black"}}>
-              S<sub>n</sub>{genThirdString(mynum, pxvals[myfinxvali])} S<sub>0</sub> = {myxvals[0]}
+              {myeqnm}{(textonly ? "_n" : <sub>n</sub>)}{mythrdstr} {myeqnm}
+              {(textonly ? "_0" : <sub>0</sub>)} = {myxvals[0]}
         </div>
         <h5>NOTE: On both of those above n is a non-negative integer.</h5>
+        <p>For the sequence: </p>
+        <div style={{display: "inline-block", border: "1px solid black"}}>
+              {myeqnm}{(textonly ? "_n" : <sub>n</sub>)} - {myeqnm}
+              {(textonly ? "_(n-1)" : <sub>n-1</sub>)} = {mynum}*2^(2n{finpartstr}) OR {myeqnm}
+              {(textonly ? "_n" : <sub>n</sub>)}{mythrdstr} {myeqnm}
+              {(textonly ? "_0" : <sub>0</sub>)} = {myxvals[0]}
+        </div>
+        <br/>
+        <br/>
+        <div>which produces: {myxvals.join(", ")} ...<br/>
+        <br/>
+        {genCollatzDispListsWithNumSteps(myxvals, false, false)}
+        ...<br/>
+        <br/>
+        {myeqnm}{(textonly ? "_n" : <sub>n</sub>)} is odd so: 3({myeqnm}
+        {(textonly ? "_n" : <sub>n</sub>)})+1=2^k<br/>
+        3({mythrdstr.substring(3)})+1=2^k<br/>
+        {myfrthstr}+1=2^k<br/>
+        {myfifthstr}=2^k<br/>
+        k={mykeqlsstr}<br/>
+        steps_to_reach_k=the_number_of_steps_for_base_number_to_reach_1={totalops}<br/>
+        total_steps = steps_to_reach_k + k + 1 = {totalops} + ({mykeqlsstr}) + 1 = <br/>
+        total_steps = {totalops} + 2n + {myfinsxthnum} = 2n + {totalops + myfinsxthnum}<br/>
+        <br/>
+        {getNKStepsEqualsStrings(myxvals.length, mysxthnum, totalops)}
+        ...<br/>
+        STEPS_FOR_{myeqnm}_N = steps_to_reach_k+k+1={totalops}+({mykeqlsstr})+1=
+        {totalops}+2n+{myfinsxthnum}=2n+{totalops+myfinsxthnum}<br/>
+        </div>
       </div>)}
-      <div>{mydispresliststr}</div>
+      <div><br/>{mydispresliststr}</div>
       <p>{dispnote}</p>
       <h4>Trace Statistics:</h4>
       <div>Number of Odds: {numodds}</div>
