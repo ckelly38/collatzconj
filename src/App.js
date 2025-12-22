@@ -8,6 +8,7 @@ function App() {
   let [mypow, setMyPow] = useState(1);
   let [errmsg, setErrorMessage] = useState("");
   let [myeqnm, setMyEquationName] = useState("S");
+  let [showpropequs, setShowPropEqus] = useState(true);
   let [calcmisevns, setCalcMisEvns] = useState(false);
   let [cycleifone, setCycleIfOne] = useState(false);
   let [textonly, setUseTextOnly] = useState(false);
@@ -41,6 +42,22 @@ function App() {
     const onegntnumstr = (isnumneg ? "+" : "-");
     const mxvalstr = ((mxval === 0) ? "" : "+") + mxval;
     return " = " + numsgnstr + "(1/3)(" + mynummag + "*2^(2n" + mxvalstr + ") " + onegntnumstr + " 1)";
+  }
+  function genFourthString(num, thirdstr, xvalsempty)
+  {
+    cc.valMustBeAnInt(num, "num");
+    cc.valMustBeBool(xvalsempty, "xvalsempty");
+    if (xvalsempty) return "";
+    if (num < 0) return "-" + mythrdstr.substring(9);
+    else return mythrdstr.substring(9, mythrdstr.length - 1);
+  }
+  function genFifthString(num, fourthstr, xvalsempty)
+  {
+    cc.valMustBeAnInt(num, "num");
+    cc.valMustBeBool(xvalsempty, "xvalsempty");
+    if (xvalsempty) return "";
+    if (num < 0) return "-" + myfrthstr.substring(2, myfrthstr.length - 5);// + "- 1"
+    else return myfrthstr.substring(0, myfrthstr.length - 4);
   }
   function getNextCollatzNum(num, museshtct, stopatone=true)
   {
@@ -113,6 +130,92 @@ function App() {
         (2*n + knum + 1) + " = " + (minstps + (2*n) + knum + 1));
     }
     return mlist.map((mstr, mi) => <div key={"nkstepswithn=" + mi}>{mstr}</div>);
+  }
+  function genEquInfoObj(basenum, initval, name)
+  {
+    cc.valMustBeAnInt(basenum, "basenum");
+    cc.valMustBeAnInt(initval, "initval");
+    return { "basenum": basenum, "name": name, "initval": initval};
+  }
+  function getIfOneEquationIsAMatchForAnother(a, b, c, d, mid)
+  {
+    cc.valMustBeAnInt(a, "a");
+    cc.valMustBeAnInt(b, "b");
+    cc.valMustBeAnInt(c, "c");
+    cc.valMustBeAnInt(d, "d");
+    cc.valMustBeAnInt(mid, "mid");
+    const equinfoobjs = [genEquInfoObj(1, 1, "A"), genEquInfoObj(5, 3, "B"), genEquInfoObj(13, 17, "C"),
+      genEquInfoObj(17, 11, "D"), genEquInfoObj(11, 7, "E"), genEquInfoObj(7, 9, "F"),
+      genEquInfoObj(29, 19, "G"), genEquInfoObj(19, 25, "H"), genEquInfoObj(25, 33, "I")];
+    const basenumequ = "(" + a + "k" + (b < 0 ? b : "+" + b) + ")";
+    const initvalequ = "(" + c + "k" + (d < 0 ? d : "+" + d) + ")";
+    //console.log("a = " + a);
+    //console.log("b = " + b);
+    //console.log("c = " + c);
+    //console.log("d = " + d);
+    //console.log("base number equ is in the form of " + basenumequ);
+    //console.log("initial value equ is in the form of " + initvalequ);
+    //Let k = ?; basenumequ = ?; Is a perfect match for ?_n.
+    const reslist = equinfoobjs.map((equobjval, mi) => {
+      //(ak+b) = equobjval["basenum"];
+      //(ck+d) = equobjval["initval"];
+      //solve for k which makes them both true
+      //basenum - b or + b depending on its sign = ak
+      //then divide that by a
+      const res = ((b < 0) ? equobjval["basenum"] + (-b) : equobjval["basenum"] - b);
+      const ores = ((d < 0) ? equobjval["initval"] + (-d) : equobjval["initval"] - d);
+      const fullbaseequstr = "" + basenumequ + " = " + equobjval["basenum"];
+      const fullinitvalequstr = "" + initvalequ + " = " + equobjval["initval"];
+      const pmatchstr = " Is a perfect match for " + equobjval["name"] + "_N.";
+      //console.log("equobj = ", equobjval);
+      //console.log("res = " + res);
+      //console.log("ores = " + ores);
+      
+      if ((res % a === 0) && (ores % c === 0))
+      {
+        //console.log("the ak=res and ck=ores are evenly divisible.");
+        
+        const finres = res / a;
+        const finores = ores / c;
+        //console.log("finres = " + finres);
+        //console.log("finores = " + finores);
+
+        if (finres === finores)
+        {
+          return "Let k = " + finres + " " + fullbaseequstr + " " + fullinitvalequstr + pmatchstr;
+        }
+      }
+      return null;
+    });
+    let finreslist = [];
+    reslist.forEach((mstr, mi) => {
+      if (cc.isVarEmptyOrNull(mstr));
+      else
+      {
+        finreslist.push(<div key={"equsbatch_" + mid + "match_" + equinfoobjs[mi]["name"]}>{mstr}</div>);
+      }
+    });
+    return finreslist;
+  }
+  function fullequmatch(a, b, c, d, e, f, mid, neqnm)
+  {
+    cc.valMustBeAnInt(a, "a");
+    cc.valMustBeAnInt(b, "b");
+    cc.valMustBeAnInt(c, "c");
+    cc.valMustBeAnInt(d, "d");
+    cc.valMustBeAnInt(e, "e");
+    cc.valMustBeAnInt(f, "f");
+    cc.valMustBeAnInt(mid, "mid");
+    const abequpt = "(" + a + "k " + ((b < 0) ? b : "+" + b) + ")";
+    const cdequpt = "(" + c + "k " + ((d < 0) ? d : "+" + d) + ")";
+    const estr = (e === 0 ? "" : "" + ((e < 0) ? "" + e : "+" + e));
+    const fstr = (f === 0 ? "" : "" + ((f < 0) ? "" + f : "+" + f));
+    const ivalstr = " " + neqnm + "_0 = " + cdequpt;
+    const nonhequstr = "" + neqnm + "_n - " + neqnm + "_(n - 1) = " + abequpt + "(2^(2n" + estr +
+      "))" + ivalstr + " (NON-HOMOGENEOUS)";
+    const hequstr = "" + neqnm + "_n = 1/3(" + abequpt + "(2^(2n" + fstr + ")) - 1) (HOMOGENEOUS)";
+    return (<div key={"mynewequstrsbatch_" + mid}>PROPOSED EQUATION {mid}:<br /><br />{nonhequstr}<br />
+      {hequstr}<br />{getIfOneEquationIsAMatchForAnother(a, b, c, d, mid)}</div>);
   }
   //function addVal(mval)
   //{
@@ -256,9 +359,9 @@ function App() {
   //however previous value of the accumulator will be the the first value of the array
   //if the accumulator is not specifically initialized to zero.
   const numodds = myresopslist.reduce((previousValue, currentValue, currentIndex) =>
-    previousValue + ((currentValue%2 === 1) ? 1 : 0), 0);
+    previousValue + ((Math.abs(currentValue%2) === 1) ? 1 : 0), 0);
   //NOTE on filter on JS: if true keep it else exclude it
-  const myoddnums = myresopslist.filter((mval, mindx) => (mval%2 === 1));
+  const myoddnums = myresopslist.filter((mval, mindx) => (Math.abs(mval%2) === 1));
   const missingevens = (calcmisevns ? myoddnums.map((mval, mindx) => mval*3+((0 < mval) ? 1 : -1))
     .filter((mval, mindx) => (mindx + 1 < myoddnums.length)) : []);
   const finnumodds = numodds - 1;
@@ -268,14 +371,18 @@ function App() {
     "one will always be even unless it 1, then you just stop, so the divide by 2 has already been " +
     "applied.";
   const mythrdstr = (xvalsempty ? "" : genThirdString(mynum, pxvals[myfinxvali]));
-  const myfrthstr = (xvalsempty ? "" : mythrdstr.substring(8, mythrdstr.length - 1));
-  const myfifthstr = (xvalsempty ? "" : myfrthstr.substring(1, myfrthstr.length - 4));
+  const myfrthstr = genFourthString(mynum, mythrdstr, xvalsempty);
+  const myfifthstr = genFifthString(mynum, myfrthstr, xvalsempty);
+  console.log("APP: myfrthstr = " + myfrthstr);
+  console.log("APP: myfifthstr = " + myfifthstr);
+  
   const mykeqlsstr = (xvalsempty ? "" : myfifthstr.substring(myfifthstr.length - 5,
     myfifthstr.length - 1));
+  console.log("APP: mykeqlsstr = " + mykeqlsstr);
   const mysixthstr = (xvalsempty ? "" : mykeqlsstr.substring(mykeqlsstr.indexOf("+") + 1));
   const mysxthnum = (xvalsempty ? 0: Number(mysixthstr));
   const myfinsxthnum = (xvalsempty ? 0: mysxthnum + 1);
-  //console.log("APP: numodds = " + numodds);
+  console.log("APP: numodds = " + numodds);
 
   //want the x vals that converge... so we can tell the user so x, y, z, ... converges...
   //then we want to display the pattern Sn - (Sn-1) = x * 2 ^ (2n+or-0 or 1 or 2)
@@ -312,6 +419,8 @@ function App() {
         placeholder="enter an integer power" />
       <button onClick={(event) => setCalcMisEvns(!calcmisevns)}>
         {calcmisevns ? "hide" : "show"} missing evens</button>
+      <button onClick={(event) => setShowPropEqus(!showpropequs)}>
+        {showpropequs ? "hide" : "show"} proposed equations</button>
       <label htmlFor="txtonly" name="txtonlylbl">Use Text Only: </label>
       <input type="checkbox" name="txtonly" id="txtonly" checked={textonly}
         onChange={(event => setUseTextOnly(!textonly))} />
@@ -345,9 +454,9 @@ function App() {
         <p>For the sequence: </p>
         <div style={{display: "inline-block", border: "1px solid black"}}>
               {myeqnm}{(textonly ? "_n" : <sub>n</sub>)} - {myeqnm}
-              {(textonly ? "_(n-1)" : <sub>n-1</sub>)} = {mynum}*2^(2n{finpartstr}) OR {myeqnm}
-              {(textonly ? "_n" : <sub>n</sub>)}{mythrdstr} {myeqnm}
-              {(textonly ? "_0" : <sub>0</sub>)} = {myxvals[0]}
+              {(textonly ? "_(n-1)" : <sub>n-1</sub>)} = {mynum}*2^(2n{finpartstr})
+              {" where "}{myeqnm}{(textonly ? "_0" : <sub>0</sub>)} = {myxvals[0]} OR {myeqnm}
+              {(textonly ? "_n" : <sub>n</sub>)}{mythrdstr}
         </div>
         <br/>
         <br/>
@@ -371,6 +480,14 @@ function App() {
         STEPS_FOR_{myeqnm}_N = steps_to_reach_k+k+1={totalops}+({mykeqlsstr})+1=
         {totalops}+2n+{myfinsxthnum}=2n+{totalops+myfinsxthnum}<br/>
         </div>
+        {(showpropequs ? (<div>
+          <br/>
+          {fullequmatch(3, -1, 2, -1, -1, 1, 1, "GenD")}<br/>
+          {fullequmatch(3, 2, 2, 1, -1, 1, 2, "GenJ")}<br/>
+          {fullequmatch(6, -1, 4, -1, -1, 1, 3, "GenM")}<br/>
+          {fullequmatch(12, -1, 8, -1, -1, 1, 4, "GenK")}<br/>
+          {fullequmatch(3, 1, 4, 1, 0, 2, 5, "GenS")}<br/>
+        </div>) : null)}
       </div>)}
       <div><br/>{mydispresliststr}</div>
       <p>{dispnote}</p>
