@@ -217,6 +217,63 @@ function App() {
     return (<div key={"mynewequstrsbatch_" + mid}>PROPOSED EQUATION {mid}:<br /><br />{nonhequstr}<br />
       {hequstr}<br />{getIfOneEquationIsAMatchForAnother(a, b, c, d, mid)}</div>);
   }
+  function genKTable(kmax, basenumsarr, betasubnums)
+  {
+    //k: 1, 2, 3, 4, 5, 6, 7, 8...
+    //arr[0](2^k) ... Beta_? = ?
+    //
+    let mhdarr = [<th key={"kequ"}>k = </th>];
+    for (let i = 1; i < kmax + 1; i++) mhdarr.push(<th key={"kequcol" + i}>{i}</th>);
+    mhdarr.push(<th key={"myetccell0"}>...</th>);
+    mhdarr.push(<th key={"betanums"}>betanums</th>);
+    let bdrws = basenumsarr.map((bnum, bi) => {
+      let absinitbnum = Math.abs(bnum);
+      let abetanum = bnum * 2;
+      let anum = absinitbnum * 2 - 1;//-5 * 2 = -10
+      let obnum = absinitbnum * 4 - 1;
+      let useanum = (anum % 3 === 0);
+      let usebnum = (obnum % 3 === 0);
+      console.log("bnum = " + bnum);
+      console.log("absinitbnum = " + absinitbnum);
+      console.log("anum = " + anum);
+      console.log("obnum = " + obnum);
+      console.log("useanum = " + useanum);
+      console.log("usebnum = " + usebnum);
+
+      let bdrwcells = [];
+      for (let i = 0; i < kmax + 1; i++)
+      {
+        if (i === 0) bdrwcells.push(<td key={"bnum_" + bnum + "_2tok"}>{bnum}(2^k)</td>);
+        else
+        {
+          let cnum = bnum * Math.pow(2, i);
+          let usebold = ((i === 1 && useanum) || (usebnum && i === 2));
+          let fincnum = (usebold ? <b><u>{cnum}</u></b> : <>{cnum}</>);
+          bdrwcells.push(<td key={"bnum_" + bnum + "_2to" + i}>{fincnum}</td>);
+        }
+      }
+      bdrwcells.push(<td key={"bnum_" + bnum + "_etc"}>...</td>);
+
+      if (absinitbnum % 3 === 0)
+      {
+        bdrwcells.push(<td key={"betanumandinitvalbasenum_" + bnum}>
+          (SKIP BASENUM IS A MULTIPLE OF 3)</td>);
+      }
+      else
+      {
+        if (useanum === usebnum) throw new Error("useanum and usebnum cannot be the same!");
+      
+        let initval = (useanum ? anum / 3 : obnum / 3);
+        if (bnum < 0) initval *= -1;
+        let finbsbval = (betasubnums[bi] < 0 ? "?" : "" + betasubnums[bi]);
+
+        bdrwcells.push(<td key={"betanumandinitvalbasenum_" + bnum}>
+          Beta_{finbsbval} = {(useanum ? abetanum : abetanum * 2)}, initval = {initval}</td>);
+      }
+      return (<tr key={"rowfor" + bnum}>{bdrwcells}</tr>);
+    });
+    return (<table><thead><tr>{mhdarr}</tr></thead><tbody>{bdrws}</tbody></table>);
+  }
   //function addVal(mval)
   //{
   //  let mnxvals = myxvals.map((mxval) => mxval);
@@ -253,8 +310,8 @@ function App() {
   const useoneline = true;
   const finuseoneline = useoneline;//const finuseoneline = (useoneline && mynum < 101);
   const blckstr = (finuseoneline ? "inline-" : "") + "block";
-  const mypowcomps = mynumpowsarr.map((pnum) => <NumTimesTwoPowerComp key={"row" + pnum} mynum={mynum}
-    mypow={mypow} oneline={finuseoneline} cpow={pnum} />);// addVal={addVal}
+  const mypowcomps = mynumpowsarr.map((pnum) => <NumTimesTwoPowerComp key={"row" + pnum}
+    mynum={mynum} mypow={mypow} oneline={finuseoneline} cpow={pnum} />);// addVal={addVal}
   const mypowvalsminusone = mynumpowsarr.map((pnum) =>
     mynum*Math.pow(2, pnum) - 1*((0 < mynum) ? 1: -1));
   const mypowvalsdivbyt = mypowvalsminusone.map((mval) => cc.valIsDivisibleByThree(mval));
@@ -480,6 +537,9 @@ function App() {
         STEPS_FOR_{myeqnm}_N = steps_to_reach_k+k+1={totalops}+({mykeqlsstr})+1=
         {totalops}+2n+{myfinsxthnum}=2n+{totalops+myfinsxthnum}<br/>
         </div>
+        <br />
+        {genKTable(8, [1, 5, 21, 13, 17, 11, 7, 29, 19, 25, 85],
+          [0, 1, -1, 2, 3, 4, 5, 6, 7, 8, -1])}
         {(showpropequs ? (<div>
           <br/>
           {fullequmatch(3, -1, 2, -1, -1, 1, 1, "GenD")}<br/>
