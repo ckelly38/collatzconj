@@ -2,16 +2,26 @@ import logo from './logo.svg';
 import './App.css';
 import React, {useState} from 'react';
 import NumTimesTwoPowerComp from './NumTimesTwoPowerComp';
+import BaseNumsTableComp from './BaseNumsTableComp';
 import commonclass from './commonclass';
 function App() {
   let [mynum, setMyNum] = useState(1);
   let [mypow, setMyPow] = useState(1);
+  let [mykmax, setMyKmax] = useState(mypow);
   let [errmsg, setErrorMessage] = useState("");
   let [myeqnm, setMyEquationName] = useState("S");
   let [showpropequs, setShowPropEqus] = useState(true);
   let [calcmisevns, setCalcMisEvns] = useState(false);
   let [cycleifone, setCycleIfOne] = useState(false);
   let [textonly, setUseTextOnly] = useState(false);
+  let [inferorder, setInferOrder] = useState(false);
+  let [bsnumsobjarr, setBSNumsObjArr] = useState([
+    {"bsnum": 0, "order": 0}, {"bsnum": 1, "order": -1}, {"bsnum": 2, "order": -1},
+    {"bsnum": 3, "order": -1}, {"bsnum": 4, "order": -1}, {"bsnum": 5, "order": -1},
+  ]);
+  //console.log("APP: bsnumsobjarr = ", bsnumsobjarr);
+  const bsnumsarr = bsnumsobjarr.map((mobj, mi) => mobj["bsnum"]); 
+  const bsnumsordrarr = bsnumsobjarr.map((mobj, mi) => mobj["order"]);
   //let [myxvals, setMyXVals] = useState([]);
   const cc = new commonclass();
   function genFirstString(a, b, num)
@@ -41,7 +51,8 @@ function App() {
     const numsgnstr = (isnumneg ? "-" : "");
     const onegntnumstr = (isnumneg ? "+" : "-");
     const mxvalstr = ((mxval === 0) ? "" : "+") + mxval;
-    return " = " + numsgnstr + "(1/3)(" + mynummag + "*2^(2n" + mxvalstr + ") " + onegntnumstr + " 1)";
+    return " = " + numsgnstr + "(1/3)(" + mynummag + "*2^(2n" + mxvalstr + ") " +
+      onegntnumstr + " 1)";
   }
   function genFourthString(num, thirdstr, xvalsempty)
   {
@@ -82,22 +93,22 @@ function App() {
   }
   function goCollatzUntilStop(num, museshtct, cycleifone=false)
   {
-    console.log("num = " + num);
-    console.log("museshtct = " + museshtct);
-    console.log("cycleifone = " + cycleifone);
+    //console.log("num = " + num);
+    //console.log("museshtct = " + museshtct);
+    //console.log("cycleifone = " + cycleifone);
     cc.valMustBeAnInt(num, "num");
     cc.valMustBeBool(cycleifone, "cycleifone");
     cc.valMustBeBool(museshtct, "museshtct");
+    let mcycifoneminival = false;
     if (num === 1 || num === -1)
     {
-      if (cycleifone)
-      {
-        return [num, ...goCollatzUntilStop(getNextCollatzNum(num, museshtct, false), museshtct, false)];
-      }
+      if (cycleifone) mcycifoneminival = false;
       else return [num];
     }
     else if (num === 0) return [0];
-    else return [num, ...goCollatzUntilStop(getNextCollatzNum(num, museshtct, true), museshtct, false)];
+    else mcycifoneminival = true;
+    return [num, ...goCollatzUntilStop(getNextCollatzNum(num, museshtct, mcycifoneminival),
+        museshtct, false)];
   }
   function getNumStepsForNum(num, cycleifone=false)
   {
@@ -144,9 +155,10 @@ function App() {
     cc.valMustBeAnInt(c, "c");
     cc.valMustBeAnInt(d, "d");
     cc.valMustBeAnInt(mid, "mid");
-    const equinfoobjs = [genEquInfoObj(1, 1, "A"), genEquInfoObj(5, 3, "B"), genEquInfoObj(13, 17, "C"),
-      genEquInfoObj(17, 11, "D"), genEquInfoObj(11, 7, "E"), genEquInfoObj(7, 9, "F"),
-      genEquInfoObj(29, 19, "G"), genEquInfoObj(19, 25, "H"), genEquInfoObj(25, 33, "I")];
+    const equinfoobjs = [genEquInfoObj(1, 1, "A"), genEquInfoObj(5, 3, "B"),
+      genEquInfoObj(13, 17, "C"), genEquInfoObj(17, 11, "D"), genEquInfoObj(11, 7, "E"),
+      genEquInfoObj(7, 9, "F"), genEquInfoObj(29, 19, "G"), genEquInfoObj(19, 25, "H"),
+      genEquInfoObj(25, 33, "I")];
     const basenumequ = "(" + a + "k" + (b < 0 ? b : "+" + b) + ")";
     const initvalequ = "(" + c + "k" + (d < 0 ? d : "+" + d) + ")";
     //console.log("a = " + a);
@@ -182,7 +194,8 @@ function App() {
 
         if (finres === finores)
         {
-          return "Let k = " + finres + " " + fullbaseequstr + " " + fullinitvalequstr + pmatchstr;
+          return "Let k = " + finres + " " + fullbaseequstr + " " +
+            fullinitvalequstr + pmatchstr;
         }
       }
       return null;
@@ -192,7 +205,8 @@ function App() {
       if (cc.isVarEmptyOrNull(mstr));
       else
       {
-        finreslist.push(<div key={"equsbatch_" + mid + "match_" + equinfoobjs[mi]["name"]}>{mstr}</div>);
+        finreslist.push(<div key={"equsbatch_" + mid + "match_" +
+          equinfoobjs[mi]["name"]}>{mstr}</div>);
       }
     });
     return finreslist;
@@ -211,11 +225,13 @@ function App() {
     const estr = (e === 0 ? "" : "" + ((e < 0) ? "" + e : "+" + e));
     const fstr = (f === 0 ? "" : "" + ((f < 0) ? "" + f : "+" + f));
     const ivalstr = " " + neqnm + "_0 = " + cdequpt;
-    const nonhequstr = "" + neqnm + "_n - " + neqnm + "_(n - 1) = " + abequpt + "(2^(2n" + estr +
-      "))" + ivalstr + " (NON-HOMOGENEOUS)";
-    const hequstr = "" + neqnm + "_n = 1/3(" + abequpt + "(2^(2n" + fstr + ")) - 1) (HOMOGENEOUS)";
-    return (<div key={"mynewequstrsbatch_" + mid}>PROPOSED EQUATION {mid}:<br /><br />{nonhequstr}<br />
-      {hequstr}<br />{getIfOneEquationIsAMatchForAnother(a, b, c, d, mid)}</div>);
+    const nonhequstr = "" + neqnm + "_n - " + neqnm + "_(n - 1) = " + abequpt +
+      "(2^(2n" + estr + "))" + ivalstr + " (NON-HOMOGENEOUS)";
+    const hequstr = "" + neqnm + "_n = 1/3(" + abequpt +
+      "(2^(2n" + fstr + ")) - 1) (HOMOGENEOUS)";
+    return (<div key={"mynewequstrsbatch_" + mid}>PROPOSED EQUATION {mid}:<br /><br />
+      {nonhequstr}<br />{hequstr}<br />
+      {getIfOneEquationIsAMatchForAnother(a, b, c, d, mid)}</div>);
   }
   function genKTable(kmax, basenumsarr, betasubnums)
   {
@@ -283,7 +299,8 @@ function App() {
   /*
   on the power we do:
   mynum*2^1 or just mynum*2=computed_value
-  if the computed_value - 1 is divisible by 3 we say computed value - 1 = 3x x=(computed_value - 1)/3
+  if the computed_value - 1 is divisible by 3 we say
+  computed value - 1 = 3x x=(computed_value - 1)/3
   if not we just move on to the next one and do not display the computed values
   we repeat this until mypow value is reached and include it
   */
@@ -398,7 +415,7 @@ function App() {
   //5 -> 8 -> 4 -> 2 -> 1 (displayed list has 5 items 5 opps (you need to count missing evens))
   //     1    2    3    4
   //7 -> 22 -> 11 -> 34 -> 17 -> 52 -> 26 -> 13 -> 40 -> 20 -> 10 -> 5 -> 16 -> 8 -> 4 -> 2 -> 1
-  //     1     2     3     4     5     6     7     8     9     10    11   12   13    14   15   16
+  //     1     2     3     4     5     6     7     8     9     10    11   12   13    14   15  16
   //     1           2           3                 4                      5
   //2(numodds - 1) + numevens = totalops
   //2numodds - 2 + numevens = totalops
@@ -419,14 +436,15 @@ function App() {
     previousValue + ((Math.abs(currentValue%2) === 1) ? 1 : 0), 0);
   //NOTE on filter on JS: if true keep it else exclude it
   const myoddnums = myresopslist.filter((mval, mindx) => (Math.abs(mval%2) === 1));
-  const missingevens = (calcmisevns ? myoddnums.map((mval, mindx) => mval*3+((0 < mval) ? 1 : -1))
+  const missingevens = (calcmisevns ? myoddnums.map((mval, mindx) =>
+      mval*3+((0 < mval) ? 1 : -1))
     .filter((mval, mindx) => (mindx + 1 < myoddnums.length)) : []);
   const finnumodds = numodds - 1;
   const numevens = totalnums - numodds;
   const totalops = totalnums + finnumodds - 1;
-  const dispnote = "NOTE: a shortcut has been applied that when an odd number is found, the next " +
-    "one will always be even unless it 1, then you just stop, so the divide by 2 has already been " +
-    "applied.";
+  const dispnote = "NOTE: a shortcut has been applied that when an odd number is found, " +
+    "the next one will always be even unless it 1, then you just stop, so the divide by 2 " +
+    "has already been applied.";
   const mythrdstr = (xvalsempty ? "" : genThirdString(mynum, pxvals[myfinxvali]));
   const myfrthstr = genFourthString(mynum, mythrdstr, xvalsempty);
   const myfifthstr = genFifthString(mynum, myfrthstr, xvalsempty);
@@ -445,6 +463,9 @@ function App() {
   //then we want to display the pattern Sn - (Sn-1) = x * 2 ^ (2n+or-0 or 1 or 2)
   //we can also indicate that the first x number will go to the mynum...
   //we could also display the collatz chain for the number
+  //kmax, basenums, order of the numbers
+  //probably a component that has basenum and the number as the component...
+  //or a basenum min and max and infer order option
   return (
     <div className="App">
       <h1>Collatz Conjecture And Information App</h1>
@@ -474,6 +495,7 @@ function App() {
       <input id="mypower" name="mypower" type="number" min={1} step={1} value={mypow}
         onChange={(event) => setMyPow(Number(event.target.value))}
         placeholder="enter an integer power" />
+      <br />
       <button onClick={(event) => setCalcMisEvns(!calcmisevns)}>
         {calcmisevns ? "hide" : "show"} missing evens</button>
       <button onClick={(event) => setShowPropEqus(!showpropequs)}>
@@ -538,8 +560,10 @@ function App() {
         {totalops}+2n+{myfinsxthnum}=2n+{totalops+myfinsxthnum}<br/>
         </div>
         <br />
-        {genKTable(8, [1, 5, 21, 13, 17, 11, 7, 29, 19, 25, 85],
-          [0, 1, -1, 2, 3, 4, 5, 6, 7, 8, -1])}
+        {<BaseNumsTableComp kmax={mykmax} setkmax={setMyKmax} seterrmsg={setErrorMessage}
+          inferorder={inferorder} setinferoder={setInferOrder}
+          bsnumsarr={bsnumsobjarr} setbsnumsarr={setBSNumsObjArr} />}
+        {genKTable(mykmax, bsnumsarr, bsnumsordrarr)}
         {(showpropequs ? (<div>
           <br/>
           {fullequmatch(3, -1, 2, -1, -1, 1, 1, "GenD")}<br/>

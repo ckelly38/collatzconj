@@ -14,7 +14,8 @@ function NumTimesTwoPowerComp({mynum, mypow, addVal=null, oneline=true, cpow=1})
     const fparttexstr = (addthreex ? " " + fincompval + "=3x ": "");
     const mtexstr = (addthreex ? "x=" + (fincompval / 3) : "");
     //if (addthreex) addVal((fincompval / 3));
-    const resstr = "" + mynum + "*2" + ((cpow === 1) ? "": "^" + cpow) + "=" + mycompval + fparttexstr;
+    const resstr = "" + mynum + "*2" + ((cpow === 1) ? "": "^" + cpow) + "=" + mycompval +
+        fparttexstr;
     //console.log("fincompval = ", fincompval);
 
     return (<div id={"row"+cpow} style={{display: (oneline ? "inline-" : "") + "block"}}>
