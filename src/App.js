@@ -235,6 +235,7 @@ function App() {
   }
   function genKTable(kmax, basenumsarr, betasubnums)
   {
+    cc.valMustBeAnInt(kmax, "kmax");
     //k: 1, 2, 3, 4, 5, 6, 7, 8...
     //arr[0](2^k) ... Beta_? = ?
     //
@@ -243,6 +244,7 @@ function App() {
     mhdarr.push(<th key={"myetccell0"}>...</th>);
     mhdarr.push(<th key={"betanums"}>betanums</th>);
     let bdrws = basenumsarr.map((bnum, bi) => {
+      cc.valMustBeAnInt(bnum, "bnum");
       let absinitbnum = Math.abs(bnum);
       let abetanum = bnum * 2;
       let anum = absinitbnum * 2 - 1;//-5 * 2 = -10
@@ -269,6 +271,7 @@ function App() {
         }
       }
       bdrwcells.push(<td key={"bnum_" + bnum + "_etc"}>...</td>);
+      cc.valMustBeAnInt(betasubnums[bi], "betasubnums[" + bi + "]");
 
       if (absinitbnum % 3 === 0)
       {
@@ -289,6 +292,175 @@ function App() {
       return (<tr key={"rowfor" + bnum}>{bdrwcells}</tr>);
     });
     return (<table><thead><tr>{mhdarr}</tr></thead><tbody>{bdrws}</tbody></table>);
+  }
+  function computeStepsViaBigN(num, sc=0)
+  {
+    cc.valMustBeAnInt(num, "num");
+    cc.valMustBeAnInt(sc, "sc");
+    if (sc < 0) throw new Error("sc must be at least zero 0!");
+
+    //if num is odd and positive:
+    //num = 2k - 1
+    //num + 1 = 2k
+    //k = (num + 1) / 2
+    //if num is odd and negative just multiply by -1 and call again
+    //but all steps will need to apply said negative at the end again.
+    //if num is even divide by 2 and add 1 to step count...
+    //2 + BigN_(3k-1) = BigN(2k-1); BigN_1 = 3;
+    //num = 2k-1=27 2k=28 k=14 3k-1=27+14=41
+    //2 + BigN(41) = BigN(27);
+    //num=41=2k-1 2k=42 k=21 3k-1=62
+    //2 + BigN(62) = BigN(41);
+    //3 + BigN(31) = BigN(41);
+    //1 + BigN(62) = BigN(31);
+    //2k-1 = 31 2k=32 k=16 3k-1=47
+    //2k-1 = 47 2k=48 k=24 3k-1=71
+    //2k-1 = 71 2k=72 k=36 3k-1=107
+    
+    //when num = 0, we let k=1 so no accidental divide by zero
+    const mobjkeys = ["newnum", "num", "k", "stepcount"];
+    if (num < 0)
+    {
+      const steps = computeStepsViaBigN(-num, 0);
+      console.log("num = " + num);
+      console.log("steps = ", steps);
+      
+      const finsteps = steps.map((mobj) => {
+        let nwobj = {};
+        for (let mki = 0; mki < mobjkeys.length; mki++)
+        {
+          let mky = mobjkeys[mki];
+          if (mki < 3) nwobj[mky] = -1*mobj[mky];
+          else nwobj[mky] = mobj[mky];
+        }
+        return nwobj;
+      });
+      console.log("finsteps = ", finsteps);
+      return finsteps;
+    }
+    else if (num === 0) return [{"newnum": 0, "num": 0, "k": 1, "stepcount": 1}];
+    else if (num === 1)
+    {
+      if (sc === 0)
+      {
+        //in this case, BigN_1 = 3
+        //so should we compute our newnum 2k-1=1 2k=2 k=1 3k-1=2
+        //2+BigN_(3k-1=2)=BigN_(2k-1=1); so do nothing...
+      }
+      else return [{"newnum": 1, "num": 1, "k": 1, "stepcount": sc}];
+    }
+    //else compute k.
+
+    let scdiff = 1;
+    let knum = num;
+    let numdiff = 0;
+    if (num % 2 === 0);
+    else
+    {
+      knum++;
+      scdiff++;
+      numdiff = num;
+    }
+    const k = knum / 2;
+    const nwsc = sc + scdiff;
+    const nwnum = numdiff + k;
+    let myobj = {"newnum": nwnum, "num": num, "k": k, "stepcount": sc};
+    if (num % 2 === 0)
+    {
+      console.log("num = " + num);
+      console.log("1 + BigN_(newnum=k=" + k + ") = BigN(2k=num=" + num + ")");
+      //throw new Error("NOT SURE WHAT TO PRINT FOR EVEN NUMBERS!");
+    }
+    else console.log("2 + BigN_(3k-1=" + nwnum + ") = BigN(2k-1=num=" + num + ")");
+    console.log("with sc = " + sc);
+
+    console.log("k = " + k);
+    console.log("nwsc = " + nwsc);
+    console.log("nwnum = " + nwnum);
+    console.log("myobj = ", myobj);
+
+    const resobjs = computeStepsViaBigN(nwnum, nwsc);
+    let finresobjs = [myobj];
+    resobjs.forEach((cobj => {
+      let nwobj = {};
+      mobjkeys.forEach((mky) => nwobj[mky] = cobj[mky]);
+      finresobjs.push(nwobj);
+    }));
+    return finresobjs;
+  }
+  function getFinalStepCountObjs(num, sc=0)//BUG IN THIS METHOD 12-31-2025 7:24 AM MST
+  {
+    const steps = computeStepsViaBigN(num, sc);
+    console.log("steps = ", steps);
+
+    //we start at the end and compute up...
+    //something is wrong here... 12-31-2025 7:24 AM MST
+    let rsc = [];
+    for (let k = steps.length - 1; k < steps.length && (0 < k || k === 0); k--)
+    {
+      //the diff for the current stepcount depends on the next one...
+      if (0 < k)
+      {
+        let diff = steps[k]["stepcount"] - steps[k-1]["stepcount"];
+        rsc.push((rsc.length < 1) ? 0 : diff + rsc[rsc.length - 1]);
+      }
+      else
+      {
+        console.log("rsc = ", rsc);
+        if (rsc.length < 1) rsc.push(0);
+        else rsc.push(rsc[rsc.length - 1]);
+        throw new Error("NOT SURE ON THE LAST ONE!");
+      }
+    }
+    console.log("rsc = ", rsc);
+
+    const mobjkeys = ["newnum", "num", "k", "stepcount"];
+    const finsteps = steps.map((mobj, mi) => {
+      let nwobj = {};
+      mobjkeys.forEach((mky) => nwobj[mky] = mobj[mky]);
+      nwobj["otherstepcount"] = rsc[steps.length - mi - 1];
+      return nwobj;
+    });
+    console.log("finsteps = ", finsteps);
+    return finsteps;
+  }
+  function computeStepsViaBigNMain(num, sc=0)
+  {
+    const steps = getFinalStepCountObjs(num, sc);
+    console.log("steps = ", steps);
+    
+    let mynumevens = 0;
+    let mynumodds = 0;
+    const finstrs = steps.map((mobj, mi) => {
+      //if num is odd then 2 + BigN_(3k-1=newnum) = BigN_(2k-1=num) with sc = ?;
+      //if num is even then 1 + BigN_(k=newnum) = BigN_(2k=num) with sc = ?;
+      //if the num is 1 or -1 we should say 1 for num=? for a total of sc=?
+      let absnum = Math.abs(mobj["num"]);
+      if (absnum%2 === 0) mynumevens++;
+      else mynumodds++;
+      if (absnum === 1)
+      {
+        const mstrpta = "+ 1 for the number: " + mobj["num"];
+        let finstr = <>{mstrpta + " for a total of steps: " + mobj["stepcount"]}<br/></>;
+        return finstr;
+      }
+      const sbnum = ((absnum%2 === 0) ? "2k": "2k-1");
+      const nwsbnum = ((absnum%2 === 0) ? "k": "3k-1");
+      const bgpt = ((absnum%2 === 0) ? "1": "2");
+      const mstrpta = "" + bgpt + " + BigN_(" + nwsbnum + "=newnum=" + mobj["newnum"];
+      const mstrptb = ") = BigN_(" + sbnum + "=num=" + mobj["num"] + ")";
+      const mstrptc = " with reversed step count: " + mobj["otherstepcount"];
+      let finstr = <>{mstrpta + mstrptb + mstrptc}<br /></>;
+      return finstr;
+    });
+    finstrs.push(<>{"numevens = " + mynumevens}<br /></>);
+    finstrs.push(<>{"numodds = " + mynumodds}<br /></>);
+    finstrs.push(<>{"mynumodds*2 = " + mynumodds*2}<br /></>);
+    finstrs.push(<>{"(mynumodds-1)*2 = " + (mynumodds-1)*2}<br /></>);
+    finstrs.push(<>{"(mynumodds-1)*2+numevens = " + ((mynumodds-1)*2+mynumevens)}<br /></>);
+    console.log("finstrs = ", finstrs);
+    //throw new Error("NOT DONE YET!");
+    return <div>{finstrs}</div>;
   }
   //function addVal(mval)
   //{
@@ -564,6 +736,7 @@ function App() {
           inferorder={inferorder} setinferoder={setInferOrder}
           bsnumsarr={bsnumsobjarr} setbsnumsarr={setBSNumsObjArr} />}
         {genKTable(mykmax, bsnumsarr, bsnumsordrarr)}
+        {computeStepsViaBigNMain(-27, 0)}
         {(showpropequs ? (<div>
           <br/>
           {fullequmatch(3, -1, 2, -1, -1, 1, 1, "GenD")}<br/>
