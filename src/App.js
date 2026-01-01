@@ -1,4 +1,4 @@
-import logo from './logo.svg';
+//import logo from './logo.svg';
 import './App.css';
 import React, {useState} from 'react';
 import NumTimesTwoPowerComp from './NumTimesTwoPowerComp';
@@ -8,6 +8,7 @@ function App() {
   let [mynum, setMyNum] = useState(1);
   let [mypow, setMyPow] = useState(1);
   let [mykmax, setMyKmax] = useState(mypow);
+  let [mystepnum, setMyStepNumber] = useState(1);
   let [errmsg, setErrorMessage] = useState("");
   let [myeqnm, setMyEquationName] = useState("S");
   let [showpropequs, setShowPropEqus] = useState(true);
@@ -15,6 +16,7 @@ function App() {
   let [cycleifone, setCycleIfOne] = useState(false);
   let [textonly, setUseTextOnly] = useState(false);
   let [inferorder, setInferOrder] = useState(false);
+  let [cmbnevens, setCombineEvens] = useState(true);
   let [bsnumsobjarr, setBSNumsObjArr] = useState([
     {"bsnum": 0, "order": 0}, {"bsnum": 1, "order": -1}, {"bsnum": 2, "order": -1},
     {"bsnum": 3, "order": -1}, {"bsnum": 4, "order": -1}, {"bsnum": 5, "order": -1},
@@ -242,7 +244,7 @@ function App() {
     let mhdarr = [<th key={"kequ"}>k = </th>];
     for (let i = 1; i < kmax + 1; i++) mhdarr.push(<th key={"kequcol" + i}>{i}</th>);
     mhdarr.push(<th key={"myetccell0"}>...</th>);
-    mhdarr.push(<th key={"betanums"}>betanums</th>);
+    mhdarr.push(<th key={"betanums"}>betanums and xvals</th>);
     let bdrws = basenumsarr.map((bnum, bi) => {
       cc.valMustBeAnInt(bnum, "bnum");
       let absinitbnum = Math.abs(bnum);
@@ -258,13 +260,19 @@ function App() {
       console.log("useanum = " + useanum);
       console.log("usebnum = " + usebnum);
 
+      let bdrwnums = [];
       let bdrwcells = [];
       for (let i = 0; i < kmax + 1; i++)
       {
-        if (i === 0) bdrwcells.push(<td key={"bnum_" + bnum + "_2tok"}>{bnum}(2^k)</td>);
+        if (i === 0)
+        {
+          bdrwcells.push(<td key={"bnum_" + bnum + "_2tok"}>{bnum}(2^k)</td>);
+          bdrwnums.push(bnum);
+        }
         else
         {
           let cnum = bnum * Math.pow(2, i);
+          bdrwnums.push(cnum);
           let usebold = ((i === 1 && useanum) || (usebnum && i === 2));
           let fincnum = (usebold ? <b><u>{cnum}</u></b> : <>{cnum}</>);
           bdrwcells.push(<td key={"bnum_" + bnum + "_2to" + i}>{fincnum}</td>);
@@ -285,9 +293,16 @@ function App() {
         let initval = (useanum ? anum / 3 : obnum / 3);
         if (bnum < 0) initval *= -1;
         let finbsbval = (betasubnums[bi] < 0 ? "?" : "" + betasubnums[bi]);
+        let xvalsftble = [];
+        let xidiff = (useanum ? 0: 1);
+        for (let i = 1 + xidiff; i < kmax + 1; i+=2)
+        {
+          xvalsftble.push((bnum < 0 ? -1: 1)*(Math.abs(bdrwnums[i]) - 1) / 3);
+        }
 
         bdrwcells.push(<td key={"betanumandinitvalbasenum_" + bnum}>
-          Beta_{finbsbval} = {(useanum ? abetanum : abetanum * 2)}, initval = {initval}</td>);
+          Beta_{finbsbval} = {(useanum ? abetanum : abetanum * 2)}
+          {", xvals = "}{xvalsftble.join(", ")}...</td>);
       }
       return (<tr key={"rowfor" + bnum}>{bdrwcells}</tr>);
     });
@@ -318,7 +333,7 @@ function App() {
     //2k-1 = 71 2k=72 k=36 3k-1=107
     
     //when num = 0, we let k=1 so no accidental divide by zero
-    const mobjkeys = ["newnum", "num", "k", "stepcount"];
+    const mobjkeys = ["newnum", "num", "k", "stepcount", "combinedsteps"];
     if (num < 0)
     {
       const steps = computeStepsViaBigN(-num, 0);
@@ -338,7 +353,10 @@ function App() {
       console.log("finsteps = ", finsteps);
       return finsteps;
     }
-    else if (num === 0) return [{"newnum": 0, "num": 0, "k": 1, "stepcount": 1}];
+    else if (num === 0)
+    {
+      return [{"newnum": 0, "num": 0, "k": 1, "stepcount": 1, "combinedsteps": 1}];
+    }
     else if (num === 1)
     {
       if (sc === 0)
@@ -347,7 +365,7 @@ function App() {
         //so should we compute our newnum 2k-1=1 2k=2 k=1 3k-1=2
         //2+BigN_(3k-1=2)=BigN_(2k-1=1); so do nothing...
       }
-      else return [{"newnum": 1, "num": 1, "k": 1, "stepcount": sc}];
+      else return [{"newnum": 1, "num": 1, "k": 1, "stepcount": sc, "combinedsteps": 1}];
     }
     //else compute k.
 
@@ -364,7 +382,7 @@ function App() {
     const k = knum / 2;
     const nwsc = sc + scdiff;
     const nwnum = numdiff + k;
-    let myobj = {"newnum": nwnum, "num": num, "k": k, "stepcount": sc};
+    let myobj = {"newnum": nwnum, "num": num, "k": k, "stepcount": sc, "combinedsteps": 1};
     if (num % 2 === 0)
     {
       console.log("num = " + num);
@@ -388,49 +406,143 @@ function App() {
     }));
     return finresobjs;
   }
-  function getFinalStepCountObjs(num, sc=0)//BUG IN THIS METHOD 12-31-2025 7:24 AM MST
+  function getFinalStepCountObjs(num, sc=0)
   {
     const steps = computeStepsViaBigN(num, sc);
     console.log("steps = ", steps);
 
-    //we start at the end and compute up...
-    //something is wrong here... 12-31-2025 7:24 AM MST
-    let rsc = [];
-    for (let k = steps.length - 1; k < steps.length && (0 < k || k === 0); k--)
-    {
-      //the diff for the current stepcount depends on the next one...
-      if (0 < k)
-      {
-        let diff = steps[k]["stepcount"] - steps[k-1]["stepcount"];
-        rsc.push((rsc.length < 1) ? 0 : diff + rsc[rsc.length - 1]);
-      }
-      else
-      {
-        console.log("rsc = ", rsc);
-        if (rsc.length < 1) rsc.push(0);
-        else rsc.push(rsc[rsc.length - 1]);
-        throw new Error("NOT SURE ON THE LAST ONE!");
-      }
-    }
-    console.log("rsc = ", rsc);
-
-    const mobjkeys = ["newnum", "num", "k", "stepcount"];
+    const mobjkeys = ["newnum", "num", "k", "stepcount", "combinedsteps"];
     const finsteps = steps.map((mobj, mi) => {
       let nwobj = {};
       mobjkeys.forEach((mky) => nwobj[mky] = mobj[mky]);
-      nwobj["otherstepcount"] = rsc[steps.length - mi - 1];
+      //total_steps - current_step_count for object will count up from bottom and be correct...
+      nwobj["otherstepcount"] = steps[steps.length - 1]["stepcount"] - mobj["stepcount"];
+        //rsc[steps.length - mi - 1];
+      if (nwobj["otherstepcount"] < 0) throw new Error("step count must not be negative!");
       return nwobj;
     });
     console.log("finsteps = ", finsteps);
     return finsteps;
   }
-  function computeStepsViaBigNMain(num, sc=0)
+  function combineEvenStepsViaBigN(stepobjs)
   {
-    const steps = getFinalStepCountObjs(num, sc);
+    console.log("stepobjs = ", stepobjs);
+    if (cc.isVarNullOrUndefined(stepobjs)) return null;
+    else if (stepobjs.length < 1) return [];
+    const mobjkeys = ["newnum", "num", "k", "stepcount", "otherstepcount", "combinedsteps"];
+    let finsteps = [];
+    for (let mi = 0; mi < stepobjs.length; mi++)
+    {
+      let mobj = stepobjs[mi];
+      //if n is odd, keep it
+      //if n is even, then:
+      //if only one in the set keep it,
+      //if more than one need to build a new one with updated step count
+      if (Math.abs(mobj["num"]) %2 === 0)
+      {
+        //even is a problem...
+        console.log("PROBLEM FOUND AT mi = " + mi);
+        console.log("mobj = ", mobj);
+        //if ? just push it no changes
+        //otherwise need to create a new object...
+        //this new object also needs to tip off display string program...
+        //or that may need tweaked...
+        //get the next num if it is even now problem if odd no problem...
+        //if no nextnum error it cannot end on an even number.
+        if (Math.abs(mobj["newnum"]) %2 === 1) finsteps.push(mobj);
+        else
+        {
+          //2 + BigN_(3k-1=newnum=-668) = BigN_(2k-1=num=-445) with reversed step count: 72
+          //1 + BigN_(k=newnum=-334) = BigN_(2k=num=-668) with reversed step count: 70
+          //1 + BigN_(k=newnum=-167) = BigN_(2k=num=-334) with reversed step count: 69
+          //2 + BigN_(3k-1=newnum=-251) = BigN_(2k-1=num=-167) with reversed step count: 68
+          //TO:
+          //2 + BigN_(3k-1=newnum=-668) = BigN_(2k-1=num=-445) with reversed step count: 72
+          //2 + BigN_(k=newnum=-167) = BigN_(?k=num=-668) with reversed step count: 70
+          //2 + BigN_(3k-1=newnum=-251) = BigN_(2k-1=num=-167) with reversed step count: 68
+          //
+          //668 -> 334 -> 167 so 2 steps + 167 number = 668.
+          //
+          //we want the number=?k for the current index mi
+          //we want the newnumber=k for the last index
+          //the ? for k will be number/newnumber
+          //the k itself will be our newnumber as well
+          //the current step count ?
+          //the other step count is always total - current step count
+          //the step counts need to come from the current index mi
+
+          let lastmi = -1;
+          for (let k = mi; k < stepobjs.length; k++)
+          {
+            if (Math.abs(stepobjs[k]["newnum"]) %2 === 1)
+            {
+              lastmi = k;
+              break;
+            }
+          }
+          console.log("lastmi = " + lastmi);
+          console.log("(lastmi + 1 - mi) = " + (lastmi + 1 - mi));
+
+          if (lastmi < 0 || stepobjs.length - 1 < lastmi)
+          {
+            throw new Error("invalid value found and used here for the index lastmi!");
+          }
+          //else;//do nothing safe to use it.
+
+          let nwobj = {};
+          mobjkeys.forEach((mky) => {
+            if (mky === "num" || mky === "stepcount" || mky === "otherstepcount")
+            {
+              nwobj[mky] = mobj[mky];
+            }
+            else if (mky === "combinedsteps") nwobj[mky] = (lastmi + 1 - mi);
+            else nwobj[mky] = stepobjs[lastmi][mky];
+          });
+          console.log("nwobj = ", nwobj);
+
+          finsteps.push(nwobj);
+          mi = lastmi;
+          console.log("NEW mi = " + mi);
+        }
+      }
+      else finsteps.push(mobj);
+    }//end of mi for loop
+    console.log("finsteps = ", finsteps);
+    return finsteps;
+  }
+  function combineEvenStepsViaBigNMain(num, sc=0)
+  {
+    return combineEvenStepsViaBigN(getFinalStepCountObjs(num, sc));
+  }
+  function getPowerOfTwoForNum(num)
+  {
+    if (num < 0) return getPowerOfTwoForNum(-num);
+    else
+    {
+      let res = 1;
+      let k = 0;
+      while (res < num)
+      {
+        res*=2;
+        k++;
+      }
+      return k;
+    }
+  }
+  function computeStepsViaBigNMain(num, combinevens, sc=0)
+  {
+    cc.valMustBeBool(combinevens, "combinevens");
+    const initsteps = getFinalStepCountObjs(num, sc);
+    console.log("initsteps = ", initsteps);
+
+    //const useinitsteps = false;
+    //const steps = (useinitsteps ? initsteps : combineEvenStepsViaBigN(initsteps));
+    const steps = (combinevens ? combineEvenStepsViaBigN(initsteps) : initsteps);
     console.log("steps = ", steps);
     
     let mynumevens = 0;
     let mynumodds = 0;
+    let mycmbsc = 0;
     const finstrs = steps.map((mobj, mi) => {
       //if num is odd then 2 + BigN_(3k-1=newnum) = BigN_(2k-1=num) with sc = ?;
       //if num is even then 1 + BigN_(k=newnum) = BigN_(2k=num) with sc = ?;
@@ -438,28 +550,37 @@ function App() {
       let absnum = Math.abs(mobj["num"]);
       if (absnum%2 === 0) mynumevens++;
       else mynumodds++;
+      mycmbsc += mobj["combinedsteps"];
       if (absnum === 1)
       {
         const mstrpta = "+ 1 for the number: " + mobj["num"];
         let finstr = <>{mstrpta + " for a total of steps: " + mobj["stepcount"]}<br/></>;
         return finstr;
       }
-      const sbnum = ((absnum%2 === 0) ? "2k": "2k-1");
+      const divevnum = ((absnum%2 === 0) ? (mobj["num"] / mobj["newnum"]) : 1);
+      const sbnum = ((absnum%2 === 0) ? "" + divevnum + "k": "2k-1");
       const nwsbnum = ((absnum%2 === 0) ? "k": "3k-1");
-      const bgpt = ((absnum%2 === 0) ? "1": "2");
+      const bgpt = ((absnum%2 === 0) ? "" + getPowerOfTwoForNum(divevnum): "2");
       const mstrpta = "" + bgpt + " + BigN_(" + nwsbnum + "=newnum=" + mobj["newnum"];
       const mstrptb = ") = BigN_(" + sbnum + "=num=" + mobj["num"] + ")";
       const mstrptc = " with reversed step count: " + mobj["otherstepcount"];
       let finstr = <>{mstrpta + mstrptb + mstrptc}<br /></>;
       return finstr;
     });
+    const misnumevens = (mycmbsc-mynumevens-mynumodds);
+    const actnumevens = (mycmbsc-mynumodds);
+    finstrs.push(<br />);
+    finstrs.push(<>{"mycmbsc = " + mycmbsc}<br /></>);
     finstrs.push(<>{"numevens = " + mynumevens}<br /></>);
     finstrs.push(<>{"numodds = " + mynumodds}<br /></>);
+    finstrs.push(<>{"numevens+mynumodds = " + (mynumevens+mynumodds)}<br /></>);
+    finstrs.push(<>{"mycmbsc-numevens-mynumodds=misnumevens =" + misnumevens}<br /></>);
+    finstrs.push(<>{"mycmbsc-mynumodds=actnumevens = " + (mycmbsc-mynumodds)}<br /></>);
     finstrs.push(<>{"mynumodds*2 = " + mynumodds*2}<br /></>);
     finstrs.push(<>{"(mynumodds-1)*2 = " + (mynumodds-1)*2}<br /></>);
     finstrs.push(<>{"(mynumodds-1)*2+numevens = " + ((mynumodds-1)*2+mynumevens)}<br /></>);
+    finstrs.push(<>{"(mynumodds-1)*2+actnumevens = " + ((mynumodds-1)*2+actnumevens)}<br /></>);
     console.log("finstrs = ", finstrs);
-    //throw new Error("NOT DONE YET!");
     return <div>{finstrs}</div>;
   }
   //function addVal(mval)
@@ -495,6 +616,8 @@ function App() {
   console.log("APP: mypow = ", mypow);
   console.log("APP: mynum = ", mynum);
   console.log("APP: mynumpowsarr = ", mynumpowsarr);
+  console.log("APP: mystepnum = ", mystepnum);
+  console.log("APP: cmbnevens = ", cmbnevens);
   
   const useoneline = true;
   const finuseoneline = useoneline;//const finuseoneline = (useoneline && mynum < 101);
@@ -540,9 +663,9 @@ function App() {
   const mynumisneg = (mynum < 0);
   const pxvals = [0, 1, 2];
   const mynummag = (mynumisneg ? -mynum : mynum);
-  const numsgstr = (mynumisneg ? "-" : "");
+  //const numsgstr = (mynumisneg ? "-" : "");
   const negntnumstr = (mynumisneg ? "-" : "+");
-  const onegntnumstr = (mynumisneg ? "+" : "-");
+  //const onegntnumstr = (mynumisneg ? "+" : "-");
   console.log("APP: useoneline = " + useoneline);
   console.log("APP: finuseoneline = " + finuseoneline);
   console.log("APP: blckstr = " + blckstr);
@@ -736,7 +859,15 @@ function App() {
           inferorder={inferorder} setinferoder={setInferOrder}
           bsnumsarr={bsnumsobjarr} setbsnumsarr={setBSNumsObjArr} />}
         {genKTable(mykmax, bsnumsarr, bsnumsordrarr)}
-        {computeStepsViaBigNMain(-27, 0)}
+        <br/>
+        <label htmlFor="mystepnumber" name="mystepnumberlbl">My number for step count:</label>
+        <input id="mystepnumber" name="mystepnumber" type="number" step={1} value={mystepnum}
+          onChange={(event) => setMyStepNumber(Number(event.target.value))}
+          placeholder="enter an integer" />
+        <label htmlFor="cmbnevens" name="cmbnevenslbl">Combine Evens: </label>
+        <input type="checkbox" name="cmbnevens" id="cmbnevens" checked={cmbnevens}
+          onChange={(event => setCombineEvens(!cmbnevens))} />
+        {computeStepsViaBigNMain(mystepnum, cmbnevens, 0)}
         {(showpropequs ? (<div>
           <br/>
           {fullequmatch(3, -1, 2, -1, -1, 1, 1, "GenD")}<br/>
